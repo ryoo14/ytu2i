@@ -6,6 +6,9 @@ on:
       - main
   pull_request:
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Update Dependency"]
+    types: [completed]
 
 jobs:
   test:
