@@ -19,8 +19,20 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: 2.x
+      - run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git switch -C update-dependency
       - run: deno outdated --update --latest
-      - uses: peter-evans/create-pull-request@v7
+      - run: |
+          if git diff --quiet main..update-dependency; then
+            echo "rn=false" >> $GITHUB_OUTPUT
+          else
+            echo "rn=true" >> $GITHUB_OUTPUT
+          fi
+        id: check_update
+      - uses: actions/create-github-app-token@v1
+        id: app-token
         with:
           commit-message: "build: bump version deno imports"
           branch: update-deno-imports
