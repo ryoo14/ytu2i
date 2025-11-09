@@ -2,13 +2,18 @@ name: Update Dependency
 
 on:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 0 1 * *"
   workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   main:
     name: update dependency
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
       - uses: denoland/setup-deno@v2
@@ -29,20 +34,7 @@ jobs:
       - uses: actions/create-github-app-token@v1
         id: app-token
         with:
-          app-id: ${{ secrets.GENERATE_TOKEN_ID }}
-          private-key: ${{ secrets.GENERATE_TOKEN_SECRET }}
-        if: steps.check_update.outputs.rn == 'true'
-      - run: git push -f origin update-dependency
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        if: steps.check_update.outputs.rn == 'true'
-      - run: gh pr create -B main -t "Update Dependency" -b "" -l "dependencies"
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        if: steps.check_update.outputs.rn == 'true'
-      - run: sleep 60
-        if: steps.check_update.outputs.rn == 'true'
-      - run: gh pr merge --merge --auto --delete-branch
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        if: steps.check_update.outputs.rn == 'true'
+          commit-message: "build: bump version deno imports"
+          branch: update-deno-imports
+          delete-branch: true
+          title: "build: bump version deno imports"
