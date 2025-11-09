@@ -53,9 +53,6 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         if: steps.check_update.outputs.rn == 'true'
-      - name: Wait for tests
-        run: gh pr checks --watch
-        if: steps.check_update.outputs.rn == 'true'
       - name: Merge Pull Request
         run: gh pr merge --merge --auto --delete-branch
         env:
