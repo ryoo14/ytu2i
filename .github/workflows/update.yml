@@ -3,7 +3,7 @@ name: Update Dependencies
 on:
   schedule:
     # Every Friday 18:00 UTC (Saturday 03:00 JST)
-    - cron: "0 18 * * 5" 
+    - cron: "0 18 * * 5"
   workflow_dispatch:
 
 jobs:
