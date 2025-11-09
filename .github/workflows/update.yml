@@ -1,48 +1,63 @@
-name: Update Dependency
+name: Update Dependencies
 
 on:
   schedule:
-    - cron: "0 0 * * *"
+    # Every Friday 18:00 UTC (Saturday 03:00 JST)
+    - cron: "0 18 * * 5"
   workflow_dispatch:
 
 jobs:
-  main:
-    name: update dependency
+  update-dependencies:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: denoland/setup-deno@v2
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Deno v2
+        uses: denoland/setup-deno@v2
         with:
-          deno-version: 2.x
-      - run: |
+          deno-version: v2.x
+      - name: Set config and switch branch
+        run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git switch -C update-dependency
-      - run: deno outdated --update --latest
-      - run: |
-          if git diff --quiet main..update-dependency; then
+          git switch -C update-dependencies
+      - name: Update Dependencies
+        run: deno outdated --update --latest > update_result.txt 2>&1 || true
+      - name: Refresh deno.lock
+        run: deno cache --reload main.ts
+      - name: Commit changes
+        run: |
+          git add .
+          if git diff --cached --quiet; then
             echo "rn=false" >> $GITHUB_OUTPUT
           else
+            echo -e "Update dependencies\n\n$(cat update_result.txt)" | git commit -F -
             echo "rn=true" >> $GITHUB_OUTPUT
           fi
         id: check_update
-      - uses: actions/create-github-app-token@v1
+      - name: Generate App Token
+        uses: actions/create-github-app-token@v1
         id: app-token
         with:
           app-id: ${{ secrets.GENERATE_TOKEN_ID }}
           private-key: ${{ secrets.GENERATE_TOKEN_SECRET }}
         if: steps.check_update.outputs.rn == 'true'
-      - run: git push -f origin update-dependency
+      - name: Push
+        run: git push -f origin update-dependencies
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         if: steps.check_update.outputs.rn == 'true'
-      - run: gh pr create -B main -t "Update Dependency" -b "" -l "dependencies"
+      - name: Create Pull Request
+        run: gh pr create -B main -t "Update Dependencies" -b "" -l "dependencies"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         if: steps.check_update.outputs.rn == 'true'
-      - run: sleep 60
+      - name: Wait for tests
+        run: gh pr checks --watch
         if: steps.check_update.outputs.rn == 'true'
-      - run: gh pr merge --merge --auto --delete-branch
+      - name: Merge Pull Request
+        run: gh pr merge --merge --auto --delete-branch
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         if: steps.check_update.outputs.rn == 'true'
