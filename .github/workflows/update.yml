@@ -24,6 +24,9 @@ jobs:
           git switch -C update-dependencies
       - name: Update Dependencies
         run: deno outdated --update --latest 2>&1 | grep "^Updated" -A 100 > update_result.txt || true
+        # disable ansi colorize
+        env:
+          NO_COLOR: "1"
       - name: Refresh deno.lock
         run: deno cache --reload main.ts
       - name: Commit changes
